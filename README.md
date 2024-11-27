@@ -12,4 +12,10 @@ It does not change the data, just perform analisys on given and preprocesses dat
 
 ## Classifying methods
 
+* Decision Tree
+* Naive Bayes
+* K-Nearest Neighbors
+* Support Vector Machines
+* Neural Network
+
 ## Used Technologies
