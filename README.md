@@ -19,3 +19,7 @@ It does not change the data, just perform analisys on given and preprocesses dat
 * Neural Network
 
 ## Used Technologies
+
+* Python
+* Flask
+* Scikit-learn
