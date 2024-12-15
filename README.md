@@ -1,14 +1,17 @@
-# Clasification of emails
+# Compare classification methods
 
-5 methods of classifying certain dataset (emails) is tested here with simple monolithic Python+Flask app.
+This is a comparasion of different classification methods.
+
+5 methods of classifying certain dataset (emails) is tested here with simple monolithic Python + Flask app.
 
 Classyfication bases on 3 classes:
 
 * spam
-* offers
 * not spam
 
-It does not change the data, just perform analisys on given and preprocesses dataset
+It does not change the data, just perform analisys on given and preprocesses dataset.
+
+Based on [Enron Spam Dataset](https://github.com/MWiechmann/enron_spam_data)
 
 ## Classifying methods
 
