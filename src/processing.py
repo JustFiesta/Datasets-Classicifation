@@ -1,5 +1,5 @@
 """
-Preprocess and load data from csv
+Preprocessing i zwrócenie danych z csv
 """
 import pandas as pd
 
