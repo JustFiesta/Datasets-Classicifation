@@ -2,7 +2,7 @@
 
 This is a comparasion of different classification methods.
 
-5 methods of classifying certain dataset (emails) is tested here with simple monolithic Python + Flask app.
+5 methods of classifying certain dataset (emails) is tested here with simple monolithic Python + Streamlit app.
 
 Classyfication bases on 3 classes:
 
@@ -24,5 +24,5 @@ Based on [Enron Spam Dataset](https://github.com/MWiechmann/enron_spam_data)
 ## Used Technologies
 
 * Python
-* Flask
+* Streamlit
 * Scikit-learn
