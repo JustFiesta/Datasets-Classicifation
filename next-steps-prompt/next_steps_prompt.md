@@ -5,8 +5,8 @@ Potrzebuje pomocy przy tworzeniu projektu:
 Project: Email Classification - Algorithm Comparison
 Technologies:
 Python
-Flask
 Scikit-learn
+Streamlit
 Goal:
 Compare the accuracy of 5 email classification algorithms:
 Decision Tree
@@ -34,10 +34,6 @@ data_processing.py: Handles loading, cleaning, and splitting the data.
 feature_extraction.py: To implement text feature extraction (e.g., TF-IDF).
 models.py: Placeholder for model implementations and evaluation.
 main.py: Main script to run the classification experiment.
-Flask Web App (flaskr/):
-Basic structure set up for serving results via a web interface.
-Routes and templates in place for displaying the results.
-Next Steps:
 
 Implement feature extraction (e.g., using TfidfVectorizer).
 Train the five algorithms (Decision Tree, Naive Bayes, etc.).
