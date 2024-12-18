@@ -14,12 +14,12 @@ def load_and_clean_data(csv_path):
         data = pd.read_csv(csv_path)
 
         # Sprawdzenie struktury danych
-        print("Podgląd danych:")
-        print(data.head())
-        print(".")
-        print(".")
-        print(".")
-        print(data.tail())
+        # print("Podgląd danych:")
+        # print(data.head())
+        # print(".")
+        # print(".")
+        # print(".")
+        # print(data.tail())
 
         # Obsługa brakujących wartości
         # Łączenie kolumn 'Subject' i 'Message' (zakładając, że 'Message' może być pusta)
@@ -43,12 +43,12 @@ def load_and_clean_data(csv_path):
         # Usunięcie kolumny 'Spam/Ham' (opcjonalnie)
         data = data.drop(columns=['Spam/Ham'])
 
-        print("Przetworzone dane:")
-        print(data.head())
-        print(".")
-        print(".")
-        print(".")
-        print(data.tail())
+        # print("Przetworzone dane:")
+        # print(data.head())
+        # print(".")
+        # print(".")
+        # print(".")
+        # print(data.tail())
 
         return data
 
@@ -57,5 +57,5 @@ def load_and_clean_data(csv_path):
         return None
 
 if __name__ == "__main__":
-    csv_path = "../dataset/emails.csv"  
+    csv_path = "../dataset/enron_spam_data.csv"  
     processed_data = load_and_clean_data(csv_path)
