@@ -5,7 +5,8 @@
 
     python -m venv ./.venv            # create venv
 
-    source venv/bin/activate          # activate virual environment
+    source .venv/Scripts/activate     # activate virual environment (Linux)
+    .venv/Scripts/activate            # activate virual environment (Windows)
 
     pip install -r .\reqiurements.txt # install dependencies
 ```
