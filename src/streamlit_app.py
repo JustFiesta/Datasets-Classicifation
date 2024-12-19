@@ -167,7 +167,7 @@ def benchmark(data):
     benchmark_results = {}
     
     # Równoległe wykonywanie klasyfikatorów
-    with st.spinner('Wykonywanie klasyfikacji...'):
+    with st.spinner('Performing classification...'):
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
             # Przygotowanie zadań
             future_to_classifier = {
@@ -191,14 +191,14 @@ def benchmark(data):
                 progress_bar.progress(progress)
                 
                 classifier_name = future_to_classifier[future]
-                status_text.text(f'Ukończono {classifier_name}...')
+                status_text.text(f'Completed {classifier_name}...')
                 
                 try:
                     result = future.result()
                     if result:
                         benchmark_results[result["name"]] = result["results"]
                 except Exception as e:
-                    st.error(f"Błąd podczas wykonywania {classifier_name}: {str(e)}")
+                    st.error(f"Error while executing {classifier_name}: {str(e)}")
 
     # Usuwanie komponentów postępu
     progress_bar.empty()
@@ -231,15 +231,15 @@ def benchmark(data):
 
 # Classify function
 def classify(data, method):
-    st.write(f"Starting the classification for: {method}")
+    st.write(f"Performing classification for: {method}")
 
-    with st.spinner('Przygotowywanie danych...'):
+    with st.spinner('Preparing data...'):
         vectorizer = TfidfVectorizer(max_features=1000)
         X = vectorizer.fit_transform(data['Combined_Message']).toarray()
         y = data['Spam']
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    with st.spinner('Wykonywanie klasyfikacji...'):
+    with st.spinner('Performing classification...'):
         classifier_params = {
             "Decision Tree": (decision_tree_classifier, {}),
             "Naive Bayes": (naive_bayes_classifier, {}),
@@ -257,13 +257,14 @@ def classify(data, method):
 
         if result:
             st.subheader(f"Results for the method: {method}")
-            metrics = result["results"]
-            for metric, value in metrics.items():
-                if metric != "y_pred" and isinstance(value, (int, float)):
-                    st.write(f"{metric.capitalize()}: {value:.4f}")
             
-            display_classification_metrics(y_test, metrics["y_pred"], method)
-
+            # Tworzymy DataFrame z wyników (bez y_pred)
+            metrics = {k: v for k, v in result["results"].items() if k != "y_pred"}
+            metrics_df = pd.DataFrame([metrics])
+            st.dataframe(metrics_df)
+            
+            # Wyświetlamy macierz pomyłek
+            display_classification_metrics(y_test, result["results"]["y_pred"], method)
 # Main app
 def main():
     st.set_page_config(
