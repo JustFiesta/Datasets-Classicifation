@@ -10,11 +10,11 @@ def install_requirements():
     Sprawdza i instaluje wymagane zależności z pliku requirements.txt
     """
     requirements_path = os.path.join(os.path.dirname(__file__), "requirements.txt")
-    
+
     if not os.path.exists(requirements_path):
         print("Nie znaleziono pliku requirements.txt")
         return False
-    
+
     print("Sprawdzanie i instalowanie zależności...")
     try:
         subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", requirements_path])
@@ -35,13 +35,13 @@ def main():
 
     # Ścieżka do pliku UI
     ui_path = os.path.join(os.path.dirname(__file__), "src", "streamlit_app.py")
-    
+
     if not os.path.exists(ui_path):
         print(f"Błąd: Nie znaleziono pliku UI pod ścieżką: {ui_path}")
         return
 
     print("Uruchamianie aplikacji Streamlit...")
-    
+
     # Uruchomienie aplikacji Streamlit
     try:
         subprocess.run(["streamlit", "run", ui_path], check=True)
