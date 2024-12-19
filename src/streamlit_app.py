@@ -2,11 +2,13 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+
 from sklearn.metrics import classification_report, confusion_matrix
-from processing import load_and_clean_data
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import precision_score, recall_score, f1_score
+
+from processing import load_and_clean_data
 from classifier_algorithms import (
     decision_tree_classifier,
     naive_bayes_classifier,
@@ -28,7 +30,7 @@ def set_button_style():
 @st.cache_data
 def load_data():
     try:
-        return load_and_clean_data("../dataset/enron_spam_data.csv")
+        return load_and_clean_data("dataset/enron_spam_data.csv")
     except Exception as e:
         st.error(f"Failed to load data: {e}")
         return None
