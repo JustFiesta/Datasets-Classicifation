@@ -37,6 +37,7 @@ def decision_tree_classifier(X_train, X_test, y_train, y_test):
         "precision": precision_score(y_test, y_pred),
         "recall": recall_score(y_test, y_pred),
         "f1_score": f1_score(y_test, y_pred),
+        "y_pred": y_pred,
     }
 
     return results
@@ -67,6 +68,7 @@ def naive_bayes_classifier(X_train, X_test, y_train, y_test):
         "precision": precision_score(y_test, y_pred),
         "recall": recall_score(y_test, y_pred),
         "f1_score": f1_score(y_test, y_pred),
+        "y_pred": y_pred,
     }
 
     return results
@@ -98,6 +100,7 @@ def knn_classifier(X_train, X_test, y_train, y_test, n_neighbors=5):
         "precision": precision_score(y_test, y_pred),
         "recall": recall_score(y_test, y_pred),
         "f1_score": f1_score(y_test, y_pred),
+        "y_pred": y_pred,
     }
     
     return results
@@ -130,6 +133,7 @@ def svm_classifier(X_train, X_test, y_train, y_test, kernel="linear", C=1.0):
         "precision": precision_score(y_test, y_pred),
         "recall": recall_score(y_test, y_pred),
         "f1_score": f1_score(y_test, y_pred),
+        "y_pred": y_pred,  
     }
     
     return results
@@ -145,8 +149,7 @@ def neural_network_classifier(data, method="Neural Network"):
     Returns:
         dict: Słownik z wynikami klasyfikacji.
     """
-    
-        # Przetworzenie danych
+    # Przetworzenie danych
     vectorizer = TfidfVectorizer(max_features=1000)
     X = vectorizer.fit_transform(data['Combined_Message']).toarray()
     y = data['Spam']
@@ -168,6 +171,7 @@ def neural_network_classifier(data, method="Neural Network"):
             "precision": precision_score(y_test, y_pred, zero_division=1),
             "recall": recall_score(y_test, y_pred, zero_division=1),
             "f1_score": f1_score(y_test, y_pred, zero_division=1),
+            "y_pred": y_pred,
         }
 
         return results
