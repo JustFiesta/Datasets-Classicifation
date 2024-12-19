@@ -3,6 +3,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import concurrent.futures
+from functools import partial
+
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -87,150 +94,175 @@ def about_page():
     Git-hub repository (https://github.com/JustFiesta/Datasets-Classicifation)            
     """)
 
+def run_classifier(classifier_func, X_train, X_test, y_train, y_test, classifier_name, **kwargs):
+    """
+    Wykonuje klasyfikację i zwraca wyniki w ustandaryzowanym formacie
+    """
+    try:
+        if classifier_name == "Neural Network":
+            results = classifier_func(kwargs.get('data'))
+        else:
+            results = classifier_func(X_train, X_test, y_train, y_test, **kwargs)
+        
+        y_pred = results.get("y_pred")
+        
+        return {
+            "name": classifier_name,
+            "results": {
+                "accuracy": results.get("accuracy"),
+                "precision": precision_score(y_test, y_pred),
+                "recall": recall_score(y_test, y_pred),
+                "f1_score": f1_score(y_test, y_pred),
+                "y_pred": y_pred
+            }
+        }
+    except Exception as e:
+        st.error(f"Błąd podczas wykonywania {classifier_name}: {str(e)}")
+        return None
+
 # Benchmark
 def benchmark(data):
     st.title("Benchmark and Comparison")
 
-    vectorizer = TfidfVectorizer(max_features=1000)
-    X = vectorizer.fit_transform(data['Combined_Message']).toarray()
-    y = data['Spam']
+    # Przygotowanie danych
+    with st.spinner('Przygotowywanie danych...'):
+        vectorizer = TfidfVectorizer(max_features=1000)
+        X = vectorizer.fit_transform(data['Combined_Message']).toarray()
+        y = data['Spam']
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    # Lista klasyfikatorów do uruchomienia
+    classifiers = [
+        {
+            "func": decision_tree_classifier,
+            "name": "Decision Tree",
+            "kwargs": {}
+        },
+        {
+            "func": naive_bayes_classifier,
+            "name": "Naive Bayes",
+            "kwargs": {}
+        },
+        {
+            "func": knn_classifier,
+            "name": "K-Nearest Neighbors",
+            "kwargs": {"n_neighbors": 5}
+        },
+        {
+            "func": svm_classifier,
+            "name": "Support Vector Machines",
+            "kwargs": {"kernel": "linear", "C": 1.0}
+        },
+        {
+            "func": neural_network_classifier,
+            "name": "Neural Network",
+            "kwargs": {"data": data}
+        }
+    ]
 
-    # Dictionary to store results
+    # Progress bar dla wszystkich operacji
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
     benchmark_results = {}
+    
+    # Równoległe wykonywanie klasyfikatorów
+    with st.spinner('Wykonywanie klasyfikacji...'):
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            # Przygotowanie zadań
+            future_to_classifier = {
+                executor.submit(
+                    run_classifier,
+                    clf["func"],
+                    X_train,
+                    X_test,
+                    y_train,
+                    y_test,
+                    clf["name"],
+                    **clf["kwargs"]
+                ): clf["name"] for clf in classifiers
+            }
 
-    # Decision Tree
-    results = decision_tree_classifier(X_train, X_test, y_train, y_test)
-    y_pred = results.get("y_pred")
-    benchmark_results["Decision Tree"] = {
-        "accuracy": results.get("accuracy"),
-        "precision": precision_score(y_test, y_pred),
-        "recall": recall_score(y_test, y_pred),
-        "f1_score": f1_score(y_test, y_pred)
-    }
+            # Zbieranie wyników w miarę ich ukończenia
+            completed = 0
+            for future in concurrent.futures.as_completed(future_to_classifier):
+                completed += 1
+                progress = completed / len(classifiers)
+                progress_bar.progress(progress)
+                
+                classifier_name = future_to_classifier[future]
+                status_text.text(f'Ukończono {classifier_name}...')
+                
+                try:
+                    result = future.result()
+                    if result:
+                        benchmark_results[result["name"]] = result["results"]
+                except Exception as e:
+                    st.error(f"Błąd podczas wykonywania {classifier_name}: {str(e)}")
 
-    # Naive Bayes
-    results = naive_bayes_classifier(X_train, X_test, y_train, y_test)
-    y_pred = results.get("y_pred")
-    benchmark_results["Naive Bayes"] = {
-        "accuracy": results.get("accuracy"),
-        "precision": precision_score(y_test, y_pred),
-        "recall": recall_score(y_test, y_pred),
-        "f1_score": f1_score(y_test, y_pred)
-    }
+    # Usuwanie komponentów postępu
+    progress_bar.empty()
+    status_text.empty()
 
-    # KNN
-    results = knn_classifier(X_train, X_test, y_train, y_test, n_neighbors=5)
-    y_pred = results.get("y_pred")
-    benchmark_results["K-Nearest Neighbors"] = {
-        "accuracy": results.get("accuracy"),
-        "precision": precision_score(y_test, y_pred),
-        "recall": recall_score(y_test, y_pred),
-        "f1_score": f1_score(y_test, y_pred)
-    }
+    # Wyświetlanie wyników
+    if benchmark_results:
+        # Tworzenie DataFrame z wynikami
+        results_df = pd.DataFrame.from_dict(
+            {name: {k: v for k, v in data.items() if k != 'y_pred'} 
+             for name, data in benchmark_results.items()},
+            orient="index"
+        )
+        
+        st.subheader("Benchmark Results")
+        st.dataframe(results_df)
 
-    # SVM
-    results = svm_classifier(X_train, X_test, y_train, y_test, kernel="linear", C=1.0)
-    y_pred = results.get("y_pred")
-    benchmark_results["Support Vector Machines"] = {
-        "accuracy": results.get("accuracy"),
-        "precision": precision_score(y_test, y_pred),
-        "recall": recall_score(y_test, y_pred),
-        "f1_score": f1_score(y_test, y_pred)
-    }
-
-    # Neural Network
-    results = neural_network_classifier(data)
-    y_pred = results.get("y_pred")
-    benchmark_results["Neural Network"] = {
-        "accuracy": results.get("accuracy"),
-        "precision": precision_score(y_test, y_pred),
-        "recall": recall_score(y_test, y_pred),
-        "f1_score": f1_score(y_test, y_pred)
-    }
-
-    # Display benchmark results
-    st.subheader("Benchmark Results")
-    benchmark_df = pd.DataFrame.from_dict(benchmark_results, orient="index")
-    st.dataframe(benchmark_df)
-
-    # Plot comparison (Accuracy Comparison)
-    st.subheader("Accuracy Comparison")
-    plt.figure(figsize=(10, 6))
-    sns.barplot(x=benchmark_df.index, y=benchmark_df["accuracy"], palette="viridis")
-    plt.title("Accuracy of Different Classification Methods")
-    plt.ylabel("Accuracy")
-    plt.xlabel("Classifier")
-    st.pyplot(plt)
-
-    # Plot comparison (Precision Comparison)
-    st.subheader("Precision Comparison")
-    plt.figure(figsize=(10, 6))
-    sns.barplot(x=benchmark_df.index, y=benchmark_df["precision"], palette="viridis")
-    plt.title("Precision of Different Classification Methods")
-    plt.ylabel("Precision")
-    plt.xlabel("Classifier")
-    st.pyplot(plt)
-
-    # Plot comparison (Recall Comparison)
-    st.subheader("Recall Comparison")
-    plt.figure(figsize=(10, 6))
-    sns.barplot(x=benchmark_df.index, y=benchmark_df["recall"], palette="viridis")
-    plt.title("Recall of Different Classification Methods")
-    plt.ylabel("Recall")
-    plt.xlabel("Classifier")
-    st.pyplot(plt)
-
-    # Plot comparison (F1-Score Comparison)
-    st.subheader("F1-Score Comparison")
-    plt.figure(figsize=(10, 6))
-    sns.barplot(x=benchmark_df.index, y=benchmark_df["f1_score"], palette="viridis")
-    plt.title("F1-Score of Different Classification Methods")
-    plt.ylabel("F1-Score")
-    plt.xlabel("Classifier")
-    st.pyplot(plt)
+        # Wykresy porównawcze
+        metrics = ['accuracy', 'precision', 'recall', 'f1_score']
+        for metric in metrics:
+            st.subheader(f"{metric.capitalize()} Comparison")
+            fig, ax = plt.subplots(figsize=(10, 6))
+            sns.barplot(x=results_df.index, y=results_df[metric], palette="viridis", ax=ax)
+            plt.title(f"{metric.capitalize()} of Different Classification Methods")
+            plt.ylabel(metric.capitalize())
+            plt.xlabel("Classifier")
+            plt.xticks(rotation=45)
+            st.pyplot(fig)
+            plt.close(fig)
 
 # Classify function
 def classify(data, method):
     st.write(f"Starting the classification for: {method}")
 
-    vectorizer = TfidfVectorizer(max_features=1000)
-    X = vectorizer.fit_transform(data['Combined_Message']).toarray()
-    y = data['Spam']
+    with st.spinner('Przygotowywanie danych...'):
+        vectorizer = TfidfVectorizer(max_features=1000)
+        X = vectorizer.fit_transform(data['Combined_Message']).toarray()
+        y = data['Spam']
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    with st.spinner('Wykonywanie klasyfikacji...'):
+        classifier_params = {
+            "Decision Tree": (decision_tree_classifier, {}),
+            "Naive Bayes": (naive_bayes_classifier, {}),
+            "K-Nearest Neighbors": (knn_classifier, {"n_neighbors": 5}),
+            "Support Vector Machines": (svm_classifier, {"kernel": "linear", "C": 1.0}),
+            "Neural Network": (neural_network_classifier, {"data": data})
+        }
 
-    results = None
-    y_pred = None
-    if method == "Decision Tree":
-        results = decision_tree_classifier(X_train, X_test, y_train, y_test)
-        y_pred = results.get("y_pred")
-    elif method == "Naive Bayes":
-        results = naive_bayes_classifier(X_train, X_test, y_train, y_test)
-        y_pred = results.get("y_pred")
-    elif method == "K-Nearest Neighbors":
-        results = knn_classifier(X_train, X_test, y_train, y_test, n_neighbors=5)
-        y_pred = results.get("y_pred")
-    elif method == "Support Vector Machines":
-        results = svm_classifier(X_train, X_test, y_train, y_test, kernel="linear", C=1.0)
-        y_pred = results.get("y_pred")
-    elif method == "Neural Network":
-        results = neural_network_classifier(data)
-        y_pred = results.get("y_pred")
-    else:
-        st.error(f"Method {method} is not implemented.")
-        return
+        if method not in classifier_params:
+            st.error(f"Method {method} is not implemented.")
+            return
 
-    if results:
-        st.subheader(f"Results for the method: {method}")
-        for metric, value in results.items():
-            if isinstance(value, (int, float)):  # Check if the value is a scalar
-                st.write(f"{metric.capitalize()}: {value:.4f}")
-            else:
-                st.write(f"{metric.capitalize()}: {value}")
-        if y_pred is not None:
-            display_classification_metrics(y_test, y_pred, method)
+        classifier_func, kwargs = classifier_params[method]
+        result = run_classifier(classifier_func, X_train, X_test, y_train, y_test, method, **kwargs)
+
+        if result:
+            st.subheader(f"Results for the method: {method}")
+            metrics = result["results"]
+            for metric, value in metrics.items():
+                if metric != "y_pred" and isinstance(value, (int, float)):
+                    st.write(f"{metric.capitalize()}: {value:.4f}")
+            
+            display_classification_metrics(y_test, metrics["y_pred"], method)
 
 # Main app
 def main():
