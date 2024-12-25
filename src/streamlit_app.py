@@ -125,7 +125,7 @@ def benchmark(data):
     st.title("Benchmark and Comparison")
 
     # Przygotowanie danych
-    with st.spinner('Przygotowywanie danych...'):
+    with st.spinner('Preparing data...'):
         vectorizer = TfidfVectorizer(max_features=1000)
         X = vectorizer.fit_transform(data['Combined_Message']).toarray()
         y = data['Spam']
