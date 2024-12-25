@@ -49,9 +49,9 @@ def display_data(data):
 
 # Displaying classification results
 def display_classification_metrics(y_true, y_pred, method_name):
-    st.subheader(f"Results for the method: {method_name}")
     report = classification_report(y_true, y_pred, output_dict=True)
-    st.dataframe(pd.DataFrame(report).transpose())
+    metrics_df = pd.DataFrame(report).transpose()
+    st.dataframe(metrics_df)
 
     cm = confusion_matrix(y_true, y_pred)
     plt.figure(figsize=(8, 6))
@@ -257,13 +257,6 @@ def classify(data, method):
 
         if result:
             st.subheader(f"Results for the method: {method}")
-            
-            # Tworzymy DataFrame z wyników (bez y_pred)
-            metrics = {k: v for k, v in result["results"].items() if k != "y_pred"}
-            metrics_df = pd.DataFrame([metrics])
-            st.dataframe(metrics_df)
-            
-            # Wyświetlamy macierz pomyłek
             display_classification_metrics(y_test, result["results"]["y_pred"], method)
 # Main app
 def main():
