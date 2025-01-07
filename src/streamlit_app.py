@@ -146,7 +146,7 @@ def benchmark(data):
             "kwargs": {}
         },
         {
-            "func": knn_classifier,
+            "func": manual_knn_classifier,
             "name": "K-Nearest Neighbors",
             "kwargs": {"n_neighbors": 5}
         },
@@ -245,7 +245,7 @@ def classify(data, method):
         classifier_params = {
             "Decision Tree": (decision_tree_classifier, {}),
             "Naive Bayes": (naive_bayes_classifier, {}),
-            "K-Nearest Neighbors": (manual_knn_classifier, {"n_neighbors": 5}),  # Zmiana tutaj
+            "K-Nearest Neighbors": (manual_knn_classifier, {"n_neighbors": 5}),  
             "Support Vector Machines": (svm_classifier, {"kernel": "linear", "C": 1.0}),
             "Neural Network": (neural_network_classifier, {"data": data})
         }
