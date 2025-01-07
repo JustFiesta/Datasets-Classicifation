@@ -24,6 +24,8 @@ from classifier_algorithms import (
     neural_network_classifier
 )
 
+from manual_knn import manual_knn_classifier
+
 
 def set_button_style():
     st.markdown("""
@@ -243,7 +245,7 @@ def classify(data, method):
         classifier_params = {
             "Decision Tree": (decision_tree_classifier, {}),
             "Naive Bayes": (naive_bayes_classifier, {}),
-            "K-Nearest Neighbors": (knn_classifier, {"n_neighbors": 5}),
+            "K-Nearest Neighbors": (manual_knn_classifier, {"n_neighbors": 5}),  # Zmiana tutaj
             "Support Vector Machines": (svm_classifier, {"kernel": "linear", "C": 1.0}),
             "Neural Network": (neural_network_classifier, {"data": data})
         }
