@@ -22,6 +22,8 @@ from classifier_algorithms import (
     neural_network_classifier
 )
 
+from manual_knn import manual_knn_classifier
+
 SPAM_DATA_PATH = "dataset/enron_spam_data.csv"
 
 def set_button_style():
@@ -177,7 +179,7 @@ def benchmark(data, dataset_option):
             "kwargs": {}
         },
         {
-            "func": knn_classifier,
+            "func": manual_knn_classifier,
             "name": "K-Nearest Neighbors",
             "kwargs": {"n_neighbors": 5}
         },
@@ -284,7 +286,7 @@ def classify(data, method, dataset_option):
         classifier_params = {
             "Decision Tree": (decision_tree_classifier, {}),
             "Naive Bayes": (naive_bayes_classifier, {}),
-            "K-Nearest Neighbors": (knn_classifier, {"n_neighbors": 5}),
+            "K-Nearest Neighbors": (manual_knn_classifier, {"n_neighbors": 5}),  
             "Support Vector Machines": (svm_classifier, {"kernel": "linear", "C": 1.0}),
             "Neural Network": (neural_network_classifier, {})
         }
