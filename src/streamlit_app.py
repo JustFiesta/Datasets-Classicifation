@@ -15,7 +15,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import precision_score, recall_score, f1_score
 
-from processing import load_and_clean_data
+from processing_spam import load_and_clean_spam_data
+from processing_mushrooms import load_and_clean_mushrooms_data
 from classifier_algorithms import (
     decision_tree_classifier,
     naive_bayes_classifier,
@@ -24,6 +25,7 @@ from classifier_algorithms import (
     neural_network_classifier
 )
 
+SPAM_DATA_PATH = "dataset/enron_spam_data.csv"
 
 def set_button_style():
     st.markdown("""
@@ -35,9 +37,12 @@ def set_button_style():
     """, unsafe_allow_html=True)
 
 @st.cache_data
-def load_data():
+def load_data(dataset_option):
     try:
-        return load_and_clean_data("dataset/enron_spam_data.csv")
+        if dataset_option == 'Spam':
+            return load_and_clean_spam_data(SPAM_DATA_PATH)
+        else:
+            return load_and_clean_mushrooms_data()
     except Exception as e:
         st.error(f"Failed to load data: {e}")
         return None
@@ -266,6 +271,21 @@ def main():
     ) 
     set_button_style()
 
+    st.title("Dataset Classification App")
+
+    # Create a selectbox for dataset selection
+    dataset_option = st.selectbox(
+        'Wybierz dataset do przetworzenia:',
+        ('Spam', 'Mushrooms')
+    )
+
+    # Load and preprocess the selected dataset
+    data = load_data(dataset_option)
+
+    # Display the dataframe
+    st.write(f"Przetworzony dataset {dataset_option}:")
+    st.dataframe(data)
+
     col1, col2, col3, col4, col5, col6, col7 = st.columns([1, 1, 1, 1, 1, 1, 1])
     selected_method = None
     with col1:
@@ -290,7 +310,7 @@ def main():
         if st.button("Benchmark"):
             selected_method = "Benchmark"
 
-    data = load_data()
+    data = load_data(SPAM_DATA_PATH)
 
     if selected_method == "About":
         about_page()
