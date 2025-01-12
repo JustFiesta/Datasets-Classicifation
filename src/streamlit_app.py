@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import concurrent.futures
+import numpy as np
 from functools import partial
 
 from sklearn.metrics import classification_report, confusion_matrix
