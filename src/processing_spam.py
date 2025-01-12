@@ -1,6 +1,6 @@
 import pandas as pd
 
-def load_and_clean_data(csv_path):
+def load_and_clean_spam_data(csv_path):
     """
     Ładuje dane z pliku CSV, obsługuje brakujące wartości i zwraca przetworzoną ramkę danych.
     

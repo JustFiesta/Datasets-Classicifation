@@ -2,20 +2,18 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-import streamlit as st
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 import concurrent.futures
+import numpy as np
 from functools import partial
 
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import precision_score, recall_score, f1_score
+from sklearn.preprocessing import LabelEncoder
 
-from processing import load_and_clean_data
+from processing_spam import load_and_clean_spam_data
+from processing_mushrooms import load_and_clean_mushrooms_data
 from classifier_algorithms import (
     decision_tree_classifier,
     naive_bayes_classifier,
@@ -26,6 +24,7 @@ from classifier_algorithms import (
 
 from manual_knn import manual_knn_classifier
 
+SPAM_DATA_PATH = "dataset/enron_spam_data.csv"
 
 def set_button_style():
     st.markdown("""
@@ -37,9 +36,12 @@ def set_button_style():
     """, unsafe_allow_html=True)
 
 @st.cache_data
-def load_data():
+def load_data(dataset_option):
     try:
-        return load_and_clean_data("dataset/enron_spam_data.csv")
+        if dataset_option == 'Spam':
+            return load_and_clean_spam_data(SPAM_DATA_PATH)
+        else:
+            return load_and_clean_mushrooms_data()
     except Exception as e:
         st.error(f"Failed to load data: {e}")
         return None
@@ -102,19 +104,43 @@ def run_classifier(classifier_func, X_train, X_test, y_train, y_test, classifier
     """
     try:
         if classifier_name == "Neural Network":
-            results = classifier_func(kwargs.get('data'))
+            if isinstance(X_train, pd.DataFrame):  # Dla datasetu mushrooms
+                # Łączymy dane treningowe i testowe z zresetowaniem indeksów
+                X_train_reset = X_train.reset_index(drop=True)
+                X_test_reset = X_test.reset_index(drop=True)
+                X_combined = pd.concat([X_train_reset, X_test_reset], ignore_index=True)
+
+                y_train_series = pd.Series(y_train).reset_index(drop=True)
+                y_test_series = pd.Series(y_test).reset_index(drop=True)
+                y_combined = pd.concat([y_train_series, y_test_series], ignore_index=True)
+
+                # Przygotowanie pełnego datasetu z kolumną 'poisonous'
+                full_data = X_combined.copy()
+                full_data['poisonous'] = y_combined
+
+                results = classifier_func(full_data)
+            else:  # Dla datasetu spam
+                # Łączymy dane treningowe i testowe
+                X_combined = np.vstack((X_train, X_test))
+                y_combined = np.concatenate((y_train, y_test))
+  
+                data = pd.DataFrame({
+                    'Combined_Message': [' '.join(map(str, row)) for row in X_combined],
+                    'Spam': y_combined
+                })
+                results = classifier_func(data)
         else:
             results = classifier_func(X_train, X_test, y_train, y_test, **kwargs)
-        
+
         y_pred = results.get("y_pred")
-        
+
         return {
             "name": classifier_name,
             "results": {
                 "accuracy": results.get("accuracy"),
-                "precision": precision_score(y_test, y_pred),
-                "recall": recall_score(y_test, y_pred),
-                "f1_score": f1_score(y_test, y_pred),
+                "precision": precision_score(y_test, y_pred, average='weighted'),
+                "recall": recall_score(y_test, y_pred, average='weighted'),
+                "f1_score": f1_score(y_test, y_pred, average='weighted'),
                 "y_pred": y_pred
             }
         }
@@ -123,14 +149,21 @@ def run_classifier(classifier_func, X_train, X_test, y_train, y_test, classifier
         return None
 
 # Benchmark
-def benchmark(data):
+def benchmark(data, dataset_option):
     st.title("Benchmark and Comparison")
 
     # Przygotowanie danych
     with st.spinner('Preparing data...'):
-        vectorizer = TfidfVectorizer(max_features=1000)
-        X = vectorizer.fit_transform(data['Combined_Message']).toarray()
-        y = data['Spam']
+        if dataset_option == 'Spam':
+            vectorizer = TfidfVectorizer(max_features=1000)
+            X = vectorizer.fit_transform(data['Combined_Message']).toarray()
+            y = data['Spam']
+        else:
+            X = data.drop(columns=['poisonous'])
+            y = data['poisonous']
+            le = LabelEncoder()
+            X = X.apply(le.fit_transform)
+            y = le.fit_transform(y)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     # Lista klasyfikatorów do uruchomienia
@@ -158,7 +191,7 @@ def benchmark(data):
         {
             "func": neural_network_classifier,
             "name": "Neural Network",
-            "kwargs": {"data": data}
+            "kwargs": {}
         }
     ]
 
@@ -232,13 +265,21 @@ def benchmark(data):
             plt.close(fig)
 
 # Classify function
-def classify(data, method):
+def classify(data, method, dataset_option):
     st.write(f"Performing classification for: {method}")
 
     with st.spinner('Preparing data...'):
-        vectorizer = TfidfVectorizer(max_features=1000)
-        X = vectorizer.fit_transform(data['Combined_Message']).toarray()
-        y = data['Spam']
+        if dataset_option == 'Spam':
+            vectorizer = TfidfVectorizer(max_features=1000)
+            X = vectorizer.fit_transform(data['Combined_Message']).toarray()
+            y = data['Spam']
+        else:  # Dataset Mushrooms
+            X = data.drop(columns=['poisonous'])
+            y = data['poisonous']
+            le = LabelEncoder()
+            X = X.apply(le.fit_transform)
+            y = le.fit_transform(y)
+            
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     with st.spinner('Performing classification...'):
@@ -247,7 +288,7 @@ def classify(data, method):
             "Naive Bayes": (naive_bayes_classifier, {}),
             "K-Nearest Neighbors": (manual_knn_classifier, {"n_neighbors": 5}),  
             "Support Vector Machines": (svm_classifier, {"kernel": "linear", "C": 1.0}),
-            "Neural Network": (neural_network_classifier, {"data": data})
+            "Neural Network": (neural_network_classifier, {})
         }
 
         if method not in classifier_params:
@@ -260,6 +301,7 @@ def classify(data, method):
         if result:
             st.subheader(f"Results for the method: {method}")
             display_classification_metrics(y_test, result["results"]["y_pred"], method)
+            
 # Main app
 def main():
     st.set_page_config(
@@ -267,6 +309,21 @@ def main():
         page_title="Classification comparison",
     ) 
     set_button_style()
+
+    st.title("Dataset Classification App")
+
+    # Create a selectbox for dataset selection
+    dataset_option = st.selectbox(
+        'Wybierz dataset do przetworzenia:',
+        ('Spam', 'Mushrooms')
+    )
+
+    # Load and preprocess the selected dataset
+    data = load_data(dataset_option)
+
+    # Display the dataframe
+    st.write(f"Przetworzony dataset {dataset_option}:")
+    st.dataframe(data)
 
     col1, col2, col3, col4, col5, col6, col7 = st.columns([1, 1, 1, 1, 1, 1, 1])
     selected_method = None
@@ -292,17 +349,15 @@ def main():
         if st.button("Benchmark"):
             selected_method = "Benchmark"
 
-    data = load_data()
-
     if selected_method == "About":
         about_page()
     elif selected_method == "Benchmark" and data is not None:
-        benchmark(data)
+        benchmark(data, dataset_option)
     elif selected_method and data is not None:
         st.title(f"Classification method: {selected_method}")
-        classify(data, selected_method)
+        classify(data, selected_method, dataset_option)
     elif data is not None:
-        st.title("Comparison of email classification methods")
+        st.title("Comparison of classification methods")
         display_data(data)
 
 if __name__ == "__main__":
