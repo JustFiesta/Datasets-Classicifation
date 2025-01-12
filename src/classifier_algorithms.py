@@ -138,40 +138,41 @@ def svm_classifier(X_train, X_test, y_train, y_test, kernel="linear", C=1.0):
     
     return results
 
-def neural_network_classifier(data, method="Neural Network"):
+def neural_network_classifier(data):
     """
-    Klasyfikator Neural Network (Multi-Layer Perceptron) przystosowany do danych tekstowych.
+    Klasyfikator Neural Network (Multi-Layer Perceptron).
 
     Args:
-        data (DataFrame): Dane zawierające tekst oraz etykiety (kolumny 'Combined_Message' i 'Spam').
-        method (str): Nazwa metody klasyfikacji (domyślnie "Neural Network").
+        data: Dane wejściowe
 
     Returns:
-        dict: Słownik z wynikami klasyfikacji.
+        dict: Słownik z wynikami klasyfikacji
     """
-    # Przetworzenie danych
-    vectorizer = TfidfVectorizer(max_features=1000)
-    X = vectorizer.fit_transform(data['Combined_Message']).toarray()
-    y = data['Spam']
+    if 'Combined_Message' in data.columns:
+        # Przetworzenie danych tekstowych dla datasetu spam
+        vectorizer = TfidfVectorizer(max_features=1000)
+        X = vectorizer.fit_transform(data['Combined_Message']).toarray()
+        y = data['Spam']
+    else:
+        # Przetworzenie danych numerycznych dla datasetu mushrooms
+        X = data.drop(columns=['poisonous'])
+        y = data['poisonous']
 
-    # Podział na dane treningowe i testowe
+    # Trenowanie modelu
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    mlp = MLPClassifier(hidden_layer_sizes=(100,), max_iter=300, random_state=42)
+    mlp.fit(X_train, y_train)
 
-    # Trenowanie wybranego modelu
-    if method == "Neural Network":
-        mlp = MLPClassifier(hidden_layer_sizes=(100,), max_iter=300, random_state=42)
-        mlp.fit(X_train, y_train)
+    # Przewidywanie etykiet
+    y_pred = mlp.predict(X_test)
 
-        # Przewidywanie etykiet
-        y_pred = mlp.predict(X_test)
+    # Obliczanie metryk
+    results = {
+        "accuracy": accuracy_score(y_test, y_pred),
+        "precision": precision_score(y_test, y_pred, zero_division=1),
+        "recall": recall_score(y_test, y_pred, zero_division=1),
+        "f1_score": f1_score(y_test, y_pred, zero_division=1),
+        "y_pred": y_pred,
+    }
 
-        # Obliczanie metryk
-        results = {
-            "accuracy": accuracy_score(y_test, y_pred),
-            "precision": precision_score(y_test, y_pred, zero_division=1),
-            "recall": recall_score(y_test, y_pred, zero_division=1),
-            "f1_score": f1_score(y_test, y_pred, zero_division=1),
-            "y_pred": y_pred,
-        }
-
-        return results
+    return results

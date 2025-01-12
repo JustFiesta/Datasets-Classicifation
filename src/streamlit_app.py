@@ -107,23 +107,21 @@ def run_classifier(classifier_func, X_train, X_test, y_train, y_test, classifier
                 X_train_reset = X_train.reset_index(drop=True)
                 X_test_reset = X_test.reset_index(drop=True)
                 X_combined = pd.concat([X_train_reset, X_test_reset], ignore_index=True)
-                
+
                 y_train_series = pd.Series(y_train).reset_index(drop=True)
                 y_test_series = pd.Series(y_test).reset_index(drop=True)
                 y_combined = pd.concat([y_train_series, y_test_series], ignore_index=True)
-                
-                # Przygotowanie pełnego datasetu
+
+                # Przygotowanie pełnego datasetu z kolumną 'poisonous'
                 full_data = X_combined.copy()
-                full_data['Spam'] = y_combined
-                full_data['Combined_Message'] = full_data.apply(lambda x: ' '.join(x.astype(str)), axis=1)
-                
-                # Wywołanie klasyfikatora
+                full_data['poisonous'] = y_combined
+
                 results = classifier_func(full_data)
             else:  # Dla datasetu spam
                 # Łączymy dane treningowe i testowe
                 X_combined = np.vstack((X_train, X_test))
                 y_combined = np.concatenate((y_train, y_test))
-                
+  
                 data = pd.DataFrame({
                     'Combined_Message': [' '.join(map(str, row)) for row in X_combined],
                     'Spam': y_combined
@@ -131,9 +129,9 @@ def run_classifier(classifier_func, X_train, X_test, y_train, y_test, classifier
                 results = classifier_func(data)
         else:
             results = classifier_func(X_train, X_test, y_train, y_test, **kwargs)
-        
+
         y_pred = results.get("y_pred")
-        
+
         return {
             "name": classifier_name,
             "results": {
