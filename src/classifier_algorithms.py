@@ -149,12 +149,13 @@ def svm_classifier(X_train, X_test, y_train, y_test, kernel="linear", C=1.0, **k
     
     return results
 
-def neural_network_classifier(data, hidden_layer_sizes=(100,), max_iter=300, **kwargs):
+def neural_network_classifier(X_train, X_test, y_train, y_test, hidden_layer_sizes=(100,), max_iter=300, **kwargs):
     """
     Klasyfikator Neural Network (Multi-Layer Perceptron) z parametrami
 
     Args:
-        data: Dane wejściowe
+        X_train, X_test: Dane treningowe i testowe
+        y_train, y_test: Etykiety treningowe i testowe
         hidden_layer_sizes: Rozmiary warstw ukrytych
         max_iter: Maksymalna liczba iteracji
         **kwargs: Dodatkowe parametry
@@ -162,18 +163,6 @@ def neural_network_classifier(data, hidden_layer_sizes=(100,), max_iter=300, **k
     Returns:
         dict: Słownik z wynikami klasyfikacji
     """
-    if 'Combined_Message' in data.columns:
-        # Przetworzenie danych tekstowych dla datasetu spam
-        vectorizer = TfidfVectorizer(max_features=1000)
-        X = vectorizer.fit_transform(data['Combined_Message']).toarray()
-        y = data['Spam']
-    else:
-        # Przetworzenie danych numerycznych dla datasetu mushrooms
-        X = data.drop(columns=['poisonous'])
-        y = data['poisonous']
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    
     # Inicjalizacja i trenowanie modelu z parametrami
     mlp = MLPClassifier(
         hidden_layer_sizes=hidden_layer_sizes,
