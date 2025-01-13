@@ -58,12 +58,14 @@ def display_classification_metrics(y_true, y_pred, method_name):
     st.dataframe(metrics_df)
 
     cm = confusion_matrix(y_true, y_pred)
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+    
+    plt.figure(figsize=(5, 4))  
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=False, annot_kws={"size": 8})
     plt.title(f"Confusion matrix - {method_name}")
     plt.xlabel("Predicted Label")
     plt.ylabel("True Label")
-    st.pyplot(plt)
+    plt.tight_layout()
+    st.pyplot(plt, use_container_width=False)  
 
 # About
 def about_page():
@@ -97,6 +99,83 @@ def about_page():
                 
     Git-hub repository (https://github.com/JustFiesta/Datasets-Classicifation)            
     """)
+
+def get_algorithm_parameters(method):
+    """Get user-defined parameters for each algorithm"""
+    params = {}
+    
+    st.sidebar.subheader("Algorithm Parameters")
+    
+    if method == "Decision Tree":
+        params["max_depth"] = st.sidebar.slider(
+            "Maximum Depth",
+            min_value=1,
+            max_value=100,
+            value=10,
+            help="Maximum depth of the decision tree"
+        )
+        params["min_samples_split"] = st.sidebar.slider(
+            "Minimum Samples Split",
+            min_value=2,
+            max_value=20,
+            value=2,
+            help="Minimum samples required to split an internal node"
+        )
+        
+    elif method == "Naive Bayes":
+        params["alpha"] = st.sidebar.slider(
+            "Smoothing Parameter (Alpha)",
+            min_value=0.0,
+            max_value=10.0,
+            value=1.0,
+            step=0.1,
+            help="Additive (Laplace/Lidstone) smoothing parameter"
+        )
+        
+    elif method == "K-Nearest Neighbors":
+        params["n_neighbors"] = st.sidebar.slider(
+            "Number of Neighbors",
+            min_value=1,
+            max_value=20,
+            value=5,
+            help="Number of neighbors to use for classification"
+        )
+        
+    elif method == "Support Vector Machines":
+        params["C"] = st.sidebar.slider(
+            "Regularization Parameter (C)",
+            min_value=0.1,
+            max_value=10.0,
+            value=1.0,
+            step=0.1,
+            help="Regularization parameter. Smaller values mean stronger regularization"
+        )
+        params["kernel"] = st.sidebar.selectbox(
+            "Kernel Type",
+            options=["linear", "rbf", "poly"],
+            index=0,
+            help="Type of kernel to use for the SVM"
+        )
+        
+    elif method == "Neural Network":
+        hidden_size = st.sidebar.slider(
+            "Hidden Layer Size",
+            min_value=10,
+            max_value=200,
+            value=100,
+            help="Number of neurons in the hidden layer"
+        )
+        params["hidden_layer_sizes"] = (hidden_size,)
+        params["max_iter"] = st.sidebar.slider(
+            "Maximum Iterations",
+            min_value=100,
+            max_value=1000,
+            value=300,
+            step=50,
+            help="Maximum number of iterations for training"
+        )
+    
+    return params
 
 def run_classifier(classifier_func, X_train, X_test, y_train, y_test, classifier_name, **kwargs):
     """
@@ -255,52 +334,66 @@ def benchmark(data, dataset_option):
         metrics = ['accuracy', 'precision', 'recall', 'f1_score']
         for metric in metrics:
             st.subheader(f"{metric.capitalize()} Comparison")
-            fig, ax = plt.subplots(figsize=(10, 6))
+            
+            fig, ax = plt.subplots(figsize=(5, 4))  
+            
             sns.barplot(x=results_df.index, y=results_df[metric], palette="viridis", ax=ax)
-            plt.title(f"{metric.capitalize()} of Different Classification Methods")
-            plt.ylabel(metric.capitalize())
-            plt.xlabel("Classifier")
-            plt.xticks(rotation=45)
-            st.pyplot(fig)
+            plt.title(f"{metric.capitalize()} of Different Classification Methods", fontsize=8)  
+            plt.ylabel(metric.capitalize(), fontsize=8)  
+            plt.xlabel("Classifier", fontsize=8)
+            plt.xticks(rotation=45, fontsize=6)  
+            plt.yticks(fontsize=6) 
+            
+            st.pyplot(fig, use_container_width=False) 
             plt.close(fig)
+
 
 # Classify function
 def classify(data, method, dataset_option):
     st.write(f"Performing classification for: {method}")
-
-    with st.spinner('Preparing data...'):
-        if dataset_option == 'Spam':
-            vectorizer = TfidfVectorizer(max_features=1000)
-            X = vectorizer.fit_transform(data['Combined_Message']).toarray()
-            y = data['Spam']
-        else:  # Dataset Mushrooms
-            X = data.drop(columns=['poisonous'])
-            y = data['poisonous']
-            le = LabelEncoder()
-            X = X.apply(le.fit_transform)
-            y = le.fit_transform(y)
+    
+    if 'classification_started' not in st.session_state:
+        st.session_state.classification_started = False
+    
+    params = get_algorithm_parameters(method)
+    
+    if st.button("Start Classification") or st.session_state.classification_started:
+        st.session_state.classification_started = True
+        
+        with st.spinner('Preparing data...'):
+            if dataset_option == 'Spam':
+                vectorizer = TfidfVectorizer(max_features=1000)
+                X = vectorizer.fit_transform(data['Combined_Message']).toarray()
+                y = data['Spam']
+            else:
+                X = data.drop(columns=['poisonous'])
+                y = data['poisonous']
+                le = LabelEncoder()
+                X = X.apply(le.fit_transform)
+                y = le.fit_transform(y)
             
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    with st.spinner('Performing classification...'):
-        classifier_params = {
-            "Decision Tree": (decision_tree_classifier, {}),
-            "Naive Bayes": (naive_bayes_classifier, {}),
-            "K-Nearest Neighbors": (manual_knn_classifier, {"n_neighbors": 5}),  
-            "Support Vector Machines": (svm_classifier, {"kernel": "linear", "C": 1.0}),
-            "Neural Network": (neural_network_classifier, {})
-        }
+        with st.spinner('Performing classification...'):
+            classifier_params = {
+                "Decision Tree": (decision_tree_classifier, params),
+                "Naive Bayes": (naive_bayes_classifier, params),
+                "K-Nearest Neighbors": (manual_knn_classifier, params),
+                "Support Vector Machines": (svm_classifier, params),
+                "Neural Network": (neural_network_classifier, params)
+            }
 
-        if method not in classifier_params:
-            st.error(f"Method {method} is not implemented.")
-            return
+            if method not in classifier_params:
+                st.error(f"Method {method} is not implemented.")
+                return
 
-        classifier_func, kwargs = classifier_params[method]
-        result = run_classifier(classifier_func, X_train, X_test, y_train, y_test, method, **kwargs)
+            classifier_func, func_params = classifier_params[method]
+            result = run_classifier(classifier_func, X_train, X_test, y_train, y_test, method, **func_params)
 
-        if result:
-            st.subheader(f"Results for the method: {method}")
-            display_classification_metrics(y_test, result["results"]["y_pred"], method)
+            if result:
+                st.subheader(f"Results for the method: {method}")
+                display_classification_metrics(y_test, result["results"]["y_pred"], method)
+
             
 # Main app
 def main():
@@ -310,55 +403,68 @@ def main():
     ) 
     set_button_style()
 
+    if 'selected_method' not in st.session_state:
+        st.session_state.selected_method = None
+    
+    if 'classification_started' not in st.session_state:
+        st.session_state.classification_started = False
+
     st.title("Dataset Classification App")
+
+    col1, col2, col3, col4, col5, col6, col7 = st.columns([1, 1, 1, 1, 1, 1, 1])
+
+    def reset_classification():
+        st.session_state.classification_started = False
+
+    selected_method = None
+    with col1:
+        if st.button("Decision Tree"):
+            st.session_state.selected_method = "Decision Tree"
+            reset_classification()
+    with col2:
+        if st.button("Naive Bayes"):
+            st.session_state.selected_method = "Naive Bayes"
+            reset_classification()
+    with col3:
+        if st.button("KNN"):
+            st.session_state.selected_method = "K-Nearest Neighbors"
+            reset_classification()
+    with col4:
+        if st.button("SVM"):
+            st.session_state.selected_method = "Support Vector Machines"
+            reset_classification()
+    with col5:
+        if st.button("Neural Network"):
+            st.session_state.selected_method = "Neural Network"
+            reset_classification()
+    with col6:
+        if st.button("About"):
+            st.session_state.selected_method = "About"
+            reset_classification()
+    with col7:
+        if st.button("Benchmark"):
+            st.session_state.selected_method = "Benchmark"
+            reset_classification()
 
     # Create a selectbox for dataset selection
     dataset_option = st.selectbox(
-        'Wybierz dataset do przetworzenia:',
+        'Select the dataset to process',
         ('Spam', 'Mushrooms')
     )
 
     # Load and preprocess the selected dataset
     data = load_data(dataset_option)
 
-    # Display the dataframe
-    st.write(f"Przetworzony dataset {dataset_option}:")
-    st.dataframe(data)
-
-    col1, col2, col3, col4, col5, col6, col7 = st.columns([1, 1, 1, 1, 1, 1, 1])
-    selected_method = None
-    with col1:
-        if st.button("Decision Tree"):
-            selected_method = "Decision Tree"
-    with col2:
-        if st.button("Naive Bayes"):
-            selected_method = "Naive Bayes"
-    with col3:
-        if st.button("KNN"):
-            selected_method = "K-Nearest Neighbors"
-    with col4:
-        if st.button("SVM"):
-            selected_method = "Support Vector Machines"
-    with col5:
-        if st.button("Neural Network"):
-            selected_method = "Neural Network"
-    with col6:
-        if st.button("About"):
-            selected_method = "About"
-    with col7:
-        if st.button("Benchmark"):
-            selected_method = "Benchmark"
-
-    if selected_method == "About":
+    if st.session_state.selected_method == "About":
         about_page()
-    elif selected_method == "Benchmark" and data is not None:
+    elif st.session_state.selected_method == "Benchmark" and data is not None:
         benchmark(data, dataset_option)
-    elif selected_method and data is not None:
-        st.title(f"Classification method: {selected_method}")
-        classify(data, selected_method, dataset_option)
+    elif st.session_state.selected_method and data is not None:
+        st.title(f"Classification method: {st.session_state.selected_method}")
+        classify(data, st.session_state.selected_method, dataset_option)
     elif data is not None:
-        st.title("Comparison of classification methods")
-        display_data(data)
+        st.write(f"Processed dataset {dataset_option}:")
+        st.dataframe(data)
 
 if __name__ == "__main__":
     main()
