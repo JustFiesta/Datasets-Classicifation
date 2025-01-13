@@ -140,6 +140,26 @@ def get_algorithm_parameters(method):
             value=5,
             help="Number of neighbors to use for classification"
         )
+        params["weights"] = st.sidebar.selectbox(
+            "Weight Function",
+            options=["uniform", "distance"],
+            index=0,
+            help="Weight function used in prediction"
+        )
+        params["metric"] = st.sidebar.selectbox(
+            "Distance Metric",
+            options=["euclidean", "manhattan", "minkowski"],
+            index=0,
+            help="Metric used to compute distances"
+        )
+        if params["metric"] == "minkowski":
+            params["p"] = st.sidebar.slider(
+                "Minkowski Power Parameter",
+                min_value=1,
+                max_value=10,
+                value=2,
+                help="Power parameter for the Minkowski metric"
+            )
         
     elif method == "Support Vector Machines":
         params["C"] = st.sidebar.slider(
