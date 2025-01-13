@@ -4,24 +4,25 @@ from sklearn.preprocessing import LabelEncoder
 
 def load_and_clean_mushrooms_data():
     """
-    Loads and preprocesses the mushrooms dataset
+    Ładuje dane repozytorium UCI i obsługuje brakujące wartości i zwraca przetworzoną ramkę danych.
+
     Returns:
         pd.DataFrame: Preprocessed dataframe
     """
-    # Fetch dataset
+    # Pobranie datasetu
     dataset = fetch_ucirepo(id=73)
 
-    # Convert dotdict to DataFrame
+    # Konwersja na dataframe
     X = pd.DataFrame(dataset.data.features)
     y = pd.DataFrame(dataset.data.targets)
 
-    # Combine features and target
+    # Połączenie danych
     df = pd.concat([X, y], axis=1)
 
-    # Handle missing values
-    df.fillna(method='ffill', inplace=True)
+    # Obsługa pustych wartości
+    df.ffill(inplace=True)
 
-    # Encode categorical variables
+    # Enkodowanie wartości do kolumn
     label_encoders = {}
     for column in df.columns:
         if df[column].dtype == object:
