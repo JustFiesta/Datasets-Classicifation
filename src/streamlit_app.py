@@ -339,7 +339,7 @@ def benchmark(data, dataset_option):
             st.pyplot(fig, use_container_width=False) 
             plt.close(fig)
 
-# Classify function
+# Funkcja klasyfikująca
 def classify(data, method, dataset_option):
     st.write(f"Performing classification for: {method}")
     
@@ -385,7 +385,7 @@ def classify(data, method, dataset_option):
                 st.subheader(f"Results for the method: {method}")
                 display_classification_metrics(y_test, result["results"]["y_pred"], method)
             
-# Main app
+# Główna funkcja
 def main():
     st.set_page_config(
         layout="wide",
